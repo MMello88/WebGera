@@ -15,6 +15,7 @@ class Controller extends CI_Controller {
       $fields = $this->gera->getFields($table->TABLE_NAME);
       $fieldPK = $this->getFieldPK($fields);
       $validation = $this->getFieldValidation($fields);
+      $postDelfault = $this->getFieldDefault($fields);
 
       $nameClass = ucfirst($table->TABLE_NAME);
       $file = "<?php
@@ -33,6 +34,7 @@ class {$nameClass} extends MY_Controller {
   }
   
   public function setDefaultValue(){
+    {$postDelfault}
   }
 
   public function create(){
@@ -69,9 +71,21 @@ class {$nameClass} extends MY_Controller {
   private function getFieldValidation($fields){
     $validation = "";
     foreach ($fields as $key => $field) {
-      $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', 'required');\n\t\t";
+      if ($field->COLUMN_KEY != "PRI" && $field->IS_NULLABLE == "NO"){
+        $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', 'required');\n\t\t";
+      }
     }
     return $validation;
+  }
+
+  private function getFieldDefault($fields){
+    $default = "";
+    foreach ($fields as $key => $field) {
+      if (!empty($field->COLUMN_DEFAULT)){
+        $default = "\$_POST['{$field->COLUMN_NAME}'] = '{$field->COLUMN_DEFAULT}';";
+      }
+    }
+    return $default;
   }
 
   private function saveFile($class, $txt){
