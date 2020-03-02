@@ -8,7 +8,7 @@ class Controller extends CI_Controller {
     header('Content-Type: application/json');
   }
 
-  public function class($table = ""){
+  public function classes($table = ""){
     $tables = $this->gera->getTables($table);
 
     foreach ($tables as $key => $table) {
