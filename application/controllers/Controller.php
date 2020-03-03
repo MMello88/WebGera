@@ -71,8 +71,9 @@ class {$nameClass} extends MY_Controller {
   private function getFieldValidation($fields){
     $validation = "";
     foreach ($fields as $key => $field) {
-      if ($field->COLUMN_KEY != "PRI" && $field->IS_NULLABLE == "NO"){
-        $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', 'required');\n\t\t";
+      if ($field->COLUMN_KEY != "PRI"){
+        $rules = $this->getRules($field);
+        $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', '{$rules}');\n\t\t";
       }
     }
     return $validation;
@@ -82,7 +83,7 @@ class {$nameClass} extends MY_Controller {
     $default = "";
     foreach ($fields as $key => $field) {
       if (!empty($field->COLUMN_DEFAULT)){
-        $default = "\$_POST['{$field->COLUMN_NAME}'] = '{$field->COLUMN_DEFAULT}';";
+        $default = "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? '{$field->COLUMN_DEFAULT}' : \$_POST['{$field->COLUMN_NAME}'];";
       }
     }
     return $default;
@@ -96,5 +97,20 @@ class {$nameClass} extends MY_Controller {
       $file = fopen($filename, 'a+');
     fwrite($file, $txt);
     fclose($file);
+  }
+
+  private function getRules($field){
+    $rules = $field->IS_NULLABLE == "NO" ? "required|" : "";
+    $rules .= $field->DATA_TYPE == "int" ? "integer|" : "";
+    $rules .= $field->DATA_TYPE == "varchar" ? "max_length[{$field->CHARACTER_MAXIMUM_LENGTH}]|" : "";
+    $rules .= $field->DATA_TYPE == "char" ? "max_length[{$field->CHARACTER_MAXIMUM_LENGTH}]|" : "";
+    $rules .= $field->DATA_TYPE == "float" ? "numeric|" : "";
+    $rules .= $field->DATA_TYPE == "decimal" ? "decimal|" : "";
+    $rules .= $field->DATA_TYPE == "double" ? "numeric|" : "";
+    $rules .= $field->DATA_TYPE == "datetime" ? "valid_datetime|" : "";
+    $rules .= $field->DATA_TYPE == "date" ? "valid_date|" : "";
+    $column_type = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
+    $rules .= $field->DATA_TYPE == "enum" ? "in_list[$column_type]|" : "";
+    return substr($rules, 0, -1);
   }
 }
