@@ -83,7 +83,11 @@ class {$nameClass} extends MY_Controller {
     $default = "";
     foreach ($fields as $key => $field) {
       if (!empty($field->COLUMN_DEFAULT)){
-        $default = "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? '{$field->COLUMN_DEFAULT}' : \$_POST['{$field->COLUMN_NAME}'];";
+        if ($field->COLUMN_DEFAULT == 'CURRENT_TIMESTAMP(6)'){
+          $default .= "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? date('Y-m-d H:i:s') : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
+        } else {
+          $default .= "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? '{$field->COLUMN_DEFAULT}' : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
+        }
       }
     }
     return $default;
