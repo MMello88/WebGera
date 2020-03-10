@@ -84,9 +84,9 @@ class {$nameClass} extends MY_Controller {
     foreach ($fields as $key => $field) {
       if (!empty($field->COLUMN_DEFAULT)){
         if ($field->COLUMN_DEFAULT == 'CURRENT_TIMESTAMP(6)'){
-          $default .= "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? date('Y-m-d H:i:s') : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
+          $default .= "\$_POST['{$field->COLUMN_NAME}'] = !isset(\$_POST['{$field->COLUMN_NAME}']) ? date('Y-m-d H:i:s') : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
         } else {
-          $default .= "\$_POST['{$field->COLUMN_NAME}'] = \$_POST['{$field->COLUMN_NAME}'] == null ? '{$field->COLUMN_DEFAULT}' : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
+          $default .= "\$_POST['{$field->COLUMN_NAME}'] = !isset(\$_POST['{$field->COLUMN_NAME}']) ? '{$field->COLUMN_DEFAULT}' : \$_POST['{$field->COLUMN_NAME}'];\n\t\t";
         }
       }
     }
