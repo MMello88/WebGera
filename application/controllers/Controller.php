@@ -73,7 +73,8 @@ class {$nameClass} extends MY_Controller {
     foreach ($fields as $key => $field) {
       if ($field->COLUMN_KEY != "PRI"){
         $rules = $this->getRules($field);
-        $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', '{$rules}');\n\t\t";
+        if(!empty($rules))
+          $validation .= "\$this->form_validation->set_rules('{$field->COLUMN_NAME}', '{$field->COLUMN_NAME}', '{$rules}');\n\t\t";
       }
     }
     return $validation;
