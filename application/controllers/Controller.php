@@ -18,6 +18,9 @@ class Controller extends CI_Controller {
       $postDelfault = $this->getFieldDefault($fields);
 
       $nameClass = ucfirst($table->TABLE_NAME);
+
+      $inputs = $this->getInputs($table->TABLE_NAME, $fields);
+
       $file = "<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
@@ -50,7 +53,10 @@ class {$nameClass} extends MY_Controller {
   public function delete(\$Id){
     parent::delete(\$Id);
   }
-}";
+}
+
+{$inputs}
+";
 
       $this->saveFile($nameClass, $file);
       $files[$table->TABLE_NAME] = $file;
@@ -95,10 +101,7 @@ class {$nameClass} extends MY_Controller {
 
   private function saveFile($class, $txt){
     $filename = "C:\\xampp\\htdocs\\WebApi\\application\\controllers\\apiGerado\\{$class}.php";
-    if(file_exists($filename))
-      $file = fopen($filename, 'r+');
-    else
-      $file = fopen($filename, 'a+');
+    $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
     fwrite($file, $txt);
     fclose($file);
   }
@@ -116,5 +119,52 @@ class {$nameClass} extends MY_Controller {
     $column_type = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
     $rules .= $field->DATA_TYPE == "enum" ? "in_list[$column_type]|" : "";
     return substr($rules, 0, -1);
+  }
+
+  private function getInputs($table, $fields){
+    $input = "";
+    $input .= "/*\n";
+    $input .= "\t<div class='card-body'>\n";
+    $input .= "\t\t<form>\n";
+    $input .= "\t\t\t<fieldset>\n";
+    $input .= "\t\t\t\t<legend>{$table}</legend>\n";
+    foreach ($fields as $key => $field) {
+      $input .= "\t\t\t\t<div class='form-group'>\n";
+      $input .= "\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_NAME}</label>\n";
+      if ($field->COLUMN_KEY != "PRI"){
+        $input .= "\t\t\t\t\t<input type='hidden' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}'>\n";
+      } else {
+        $type = $this->getType($field);
+        $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
+        if($type == "select"){
+          $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
+          $items = explode(",", $list);
+                            
+          $input .= "\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_NAME}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t\t<option value=''> Selecione </option>\n";
+          foreach ($items as $key => $item) {
+            $input .= "\t\t\t\t\t\t<option value='{$item}'> {$item} </option>\n";
+          }
+          $input .= "\t\t\t\t\t</select>\n";
+        } else {
+          $input .= "\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_NAME}' {$isnull}>\n";
+        }
+      }
+      $input .= "\t\t\t\t</div>\n";
+    }
+    $input .= "\t\t\t</fieldset>\n";
+    $input .= "\t\t</form>\n";
+    $input .= "\t</div>\n";
+    $input .= "*/\n";
+    return empty($input) ? null : $input;
+  }
+
+  private function getType($field){
+    $type = $field->DATA_TYPE == "varchar" ? "text" : "";
+    $type = $field->DATA_TYPE == "longtext" ? "text" : "";
+    $type = $field->DATA_TYPE == "int" ? "number" : "";
+    $type = $field->DATA_TYPE == "float" ? "number" : "";
+    $type = $field->DATA_TYPE == "enum" ? "select" : "";
+    return $type;
   }
 }
