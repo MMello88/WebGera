@@ -19,7 +19,7 @@ class Controller extends CI_Controller {
 
       $nameClass = ucfirst($table->TABLE_NAME);
 
-      $inputs = $this->getInputs($table->TABLE_NAME, $fields);
+      $inputs = $this->getInputs($table->TABLE_COMMENT, $fields);
 
       $file = "<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
@@ -131,7 +131,7 @@ class {$nameClass} extends MY_Controller {
     $input .= "\t\t\t\t<legend>{$table}</legend>\n";
     foreach ($fields as $key => $field) {
       $input .= "\t\t\t\t<div class='form-group'>\n";
-      $input .= "\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_NAME}</label>\n";
+      $input .= "\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
       if ($field->COLUMN_KEY != "PRI"){
         $input .= "\t\t\t\t\t<input type='hidden' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}'>\n";
       } else {
@@ -141,18 +141,24 @@ class {$nameClass} extends MY_Controller {
           $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
           $items = explode(",", $list);
                             
-          $input .= "\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_NAME}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
           $input .= "\t\t\t\t\t\t<option value=''> Selecione </option>\n";
           foreach ($items as $key => $item) {
             $input .= "\t\t\t\t\t\t<option value='{$item}'> {$item} </option>\n";
           }
           $input .= "\t\t\t\t\t</select>\n";
         } else {
-          $input .= "\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_NAME}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
         }
       }
       $input .= "\t\t\t\t</div>\n";
     }
+    $input .= "\t\t\t\t<div class='form-actions'>\n";
+    $input .= "\t\t\t\t\t<button class='btn btn-primary' type='submit'>Salvar</button>\n";
+    $input .= "\t\t\t\t</div>\n";
+    $input .= "\t\t\t\t<div class='form-actions'>\n";
+    $input .= "\t\t\t\t\t<button class='btn btn-secondary' type='submit'>Cancelar</button>\n";
+    $input .= "\t\t\t\t</div>\n";
     $input .= "\t\t\t</fieldset>\n";
     $input .= "\t\t</form>\n";
     $input .= "\t</div>\n";
