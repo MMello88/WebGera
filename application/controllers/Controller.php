@@ -132,7 +132,7 @@ class {$nameClass} extends MY_Controller {
     foreach ($fields as $key => $field) {
       $input .= "\t\t\t\t<div class='form-group'>\n";
       $input .= "\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
-      if ($field->COLUMN_KEY != "PRI"){
+      if ($field->COLUMN_KEY == "PRI"){
         $input .= "\t\t\t\t\t<input type='hidden' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}'>\n";
       } else {
         $type = $this->getType($field);
@@ -168,10 +168,12 @@ class {$nameClass} extends MY_Controller {
 
   private function getType($field){
     $type = $field->DATA_TYPE == "varchar" ? "text" : "";
-    $type = $field->DATA_TYPE == "longtext" ? "text" : "";
-    $type = $field->DATA_TYPE == "int" ? "number" : "";
-    $type = $field->DATA_TYPE == "float" ? "number" : "";
-    $type = $field->DATA_TYPE == "enum" ? "select" : "";
+    $type .= $field->DATA_TYPE == "longtext" ? "text" : "";
+    $type .= $field->DATA_TYPE == "int" ? "number" : "";
+    $type .= $field->DATA_TYPE == "float" ? "number" : "";
+    $type .= $field->DATA_TYPE == "enum" ? "select" : "";
+    $type .= $field->DATA_TYPE == "date" ? "date" : "";
+    $type .= $field->DATA_TYPE == "datetime" ? "datetime-local" : "";
     return $type;
   }
 }
