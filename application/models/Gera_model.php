@@ -23,12 +23,27 @@ class Gera_model extends CI_Model {
   }
 
   public function getFields($table){
-    $sql = "SELECT *,(SELECT k.COLUMN_NAME
-                        FROM information_schema.KEY_COLUMN_USAGE k
-                       WHERE k.table_schema = 'matilab872_gestao' 
-                         AND k.table_name = '$table'
-                         AND k.REFERENCED_TABLE_NAME = 'users'
-                         AND k.COLUMN_NAME = c.COLUMN_NAME) COLUMN_FK
+    $sql = "SELECT *,CASE WHEN c.COLUMN_KEY IN ('MUL') 
+                          THEN (SELECT k.COLUMN_NAME
+                                  FROM information_schema.KEY_COLUMN_USAGE k
+                                 WHERE k.table_schema = 'matilab872_gestao' 
+                                   AND k.table_name = '$table'
+                                   AND k.COLUMN_NAME = c.COLUMN_NAME) 
+                           ELSE NULL END COLUMN_FK,
+                      CASE WHEN c.COLUMN_KEY IN ('MUL') 
+                           THEN (SELECT k.REFERENCED_TABLE_NAME
+                                   FROM information_schema.KEY_COLUMN_USAGE k
+                                  WHERE k.table_schema = 'matilab872_gestao' 
+                                    AND k.table_name = '$table'
+                                    AND k.COLUMN_NAME = c.COLUMN_NAME)
+                          ELSE NULL END TABLE_FK,
+                      CASE WHEN c.COLUMN_KEY IN ('MUL') 
+                           THEN (SELECT k.REFERENCED_COLUMN_NAME
+                                   FROM information_schema.KEY_COLUMN_USAGE k
+                                  WHERE k.table_schema = 'matilab872_gestao' 
+                                    AND k.table_name = '$table'
+                                    AND k.COLUMN_NAME = c.COLUMN_NAME)
+                          ELSE NULL END COLUMN_FK_PRI
             FROM information_schema.COLUMNS c
            WHERE c.table_schema = 'matilab872_gestao' 
              AND c.table_name = '$table'";

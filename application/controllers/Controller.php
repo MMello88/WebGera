@@ -17,6 +17,7 @@ class Controller extends CI_Controller {
       $validation = $this->getFieldValidation($fields);
       $postDelfault = $this->getFieldDefault($fields);
       $fieldFKUsuario = $this->getFieldFKUsuario($fields);
+      $joins = $this->getFieldJoin($table->TABLE_NAME, $fields);
 
       $nameClass = ucfirst($table->TABLE_NAME);
 
@@ -32,6 +33,8 @@ class {$nameClass} extends MY_Controller {
     \$this->table = '{$table->TABLE_NAME}';
     \$this->nameId = '{$fieldPK->COLUMN_NAME}';
     \$this->usersId = '{$fieldFKUsuario->COLUMN_FK}';
+    \$this->joins = [$joins
+    ];
   }
 
   public function get(\$Id = '', \$date = ''){
@@ -70,7 +73,7 @@ class {$nameClass} extends MY_Controller {
 
   private function getFieldFKUsuario($fields){
     foreach ($fields as $key => $field) {
-      if (!empty($field->COLUMN_FK)){
+      if ($field->TABLE_FK == "users"){
         return $field;
       }
     }
@@ -188,5 +191,18 @@ class {$nameClass} extends MY_Controller {
     $type .= $field->DATA_TYPE == "date" ? "date" : "";
     $type .= $field->DATA_TYPE == "datetime" ? "datetime-local" : "";
     return $type;
+  }
+
+  private function getFieldJoin($table, $fields){
+    $joins = "";
+    foreach ($fields as $key => $field) {
+      if(!empty($field->TABLE_FK)){
+        if ($field->TABLE_FK !== "users"){
+          $typeJoin = $field->IS_NULLABLE == "NO" ? "inner" : "left";
+          $joins.= "\n\t\t\t['table' => '{$field->TABLE_FK}', 'condition' => '{$field->TABLE_FK}.{$field->COLUMN_FK_PRI} = {$table}.{$field->COLUMN_FK}', 'type' => '{$typeJoin}'],";
+        }
+      }
+    }
+    return $joins;
   }
 }
