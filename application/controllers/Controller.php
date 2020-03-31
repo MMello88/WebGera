@@ -21,7 +21,7 @@ class Controller extends CI_Controller {
 
       $nameClass = ucfirst($table->TABLE_NAME);
 
-      $inputs = $this->getInputs($table->TABLE_COMMENT, $fields);
+      $inputs = $this->getInputs($table->TABLE_NAME, $table->TABLE_COMMENT, $fields);
 
       $file = "<?php
 defined('BASEPATH') OR exit('No direct script access allowed');
@@ -138,45 +138,54 @@ class {$nameClass} extends MY_Controller {
     return substr($rules, 0, -1);
   }
 
-  private function getInputs($table, $fields){
+  private function getInputs($class, $table, $fields){
     $input = "";
     $input .= "/*\n";
-    $input .= "\t<div class='card-body'>\n";
-    $input .= "\t\t<form>\n";
-    $input .= "\t\t\t<fieldset>\n";
-    $input .= "\t\t\t\t<legend>{$table}</legend>\n";
+    $input .= "\t<header class='page-title-bar'>\n";
+    $input .= "\t\t<legend>{$table}</legend>\n";
+    $input .= "\t</header>\n";
+    $input .= "\t<div class='page-section'>\n";
+    $input .= "\t\t<div class='section-block'>\n";
+    $input .= "\t\t\t<div class='card' id='floating-label'>\n";
+    $input .= "\t\t\t\t<div class='card-body'>\n";
+    $input .= "\t\t\t\t\t<?= form_open(base_url('{$class}/')) ?>\n";
+    $input .= "\t\t\t\t\t\t<fieldset>\n";
     foreach ($fields as $key => $field) {
-      $input .= "\t\t\t\t<div class='form-group'>\n";
-      $input .= "\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
       if ($field->COLUMN_KEY == "PRI"){
-        $input .= "\t\t\t\t\t<input type='hidden' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}'>\n";
+        $input .= "\t\t\t\t\t\t\t<input type='hidden' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}'>\n";
       } else {
+        $input .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
+        $input .= "\t\t\t\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
         $type = $this->getType($field);
         $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
         if($type == "select"){
           $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
           $items = explode(",", $list);
                             
-          $input .= "\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
-          $input .= "\t\t\t\t\t\t<option value=''> Selecione </option>\n";
+          $input .= "\t\t\t\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t\t\t\t\t<option value=''> Selecione </option>\n";
           foreach ($items as $key => $item) {
-            $input .= "\t\t\t\t\t\t<option value='{$item}'> {$item} </option>\n";
+            $input .= "\t\t\t\t\t\t\t\t\t<option value='{$item}'> {$item} </option>\n";
           }
-          $input .= "\t\t\t\t\t</select>\n";
+          $input .= "\t\t\t\t\t\t\t\t</select>\n";
         } else {
-          $input .= "\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
+          $input .= "\t\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
+          $input .= "\t\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response->error->{$field->COLUMN_NAME}) ? \$response->error->{$field->COLUMN_NAME} : ''; ?></div>\n";
+          $input .= "\t\t\t\t\t\t\t\t<?php endif; ?>\n";
         }
+        $input .= "\t\t\t\t\t\t\t</div>\n";
       }
-      $input .= "\t\t\t\t</div>\n";
     }
-    $input .= "\t\t\t\t<div class='form-actions'>\n";
-    $input .= "\t\t\t\t\t<button class='btn btn-primary' type='submit'>Salvar</button>\n";
+    $input .= "\t\t\t\t\t\t\t<div class='form-actions'>\n";
+    $input .= "\t\t\t\t\t\t\t\t<button class='btn btn-primary mr-auto' type='submit'>Salvar</button>\n";
+    $input .= "\t\t\t\t\t\t\t\t<button class='btn btn-secondary ml-auto' type='submit'>Cancelar</button>\n";
+    $input .= "\t\t\t\t\t\t\t</div>\n";
+    $input .= "\t\t\t\t\t</fieldset>\n";
+    $input .= "\t\t\t\t\t<?= form_close() ?>\n";
     $input .= "\t\t\t\t</div>\n";
-    $input .= "\t\t\t\t<div class='form-actions'>\n";
-    $input .= "\t\t\t\t\t<button class='btn btn-secondary' type='submit'>Cancelar</button>\n";
-    $input .= "\t\t\t\t</div>\n";
-    $input .= "\t\t\t</fieldset>\n";
-    $input .= "\t\t</form>\n";
+    $input .= "\t\t\t</div>\n";
+    $input .= "\t\t</div>\n";
     $input .= "\t</div>\n";
     $input .= "*/\n";
     return empty($input) ? null : $input;
