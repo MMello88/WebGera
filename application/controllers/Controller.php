@@ -9,6 +9,12 @@ class Controller extends CI_Controller {
   }
 
   public function classes($table = ""){
+    $this->generateclassapi->init($table);
+    $this->generateclassview->init($table);
+    $this->generateclassjavascript->init($table);
+  }
+
+  private function oldclasses($table = ""){
     $tables = $this->gera->getTables($table);
 
     foreach ($tables as $key => $table) {
@@ -18,9 +24,7 @@ class Controller extends CI_Controller {
       $postDelfault = $this->getFieldDefault($fields);
       $fieldFKUsuario = $this->getFieldFKUsuario($fields);
       $joins = $this->getFieldJoin($table->TABLE_NAME, $fields);
-
       $nameClass = ucfirst($table->TABLE_NAME);
-
       $inputs = $this->getInputs($table->TABLE_NAME, $table->TABLE_COMMENT, $fields);
 
       $file = "<?php
@@ -189,6 +193,27 @@ class {$nameClass} extends MY_Controller {
     $input .= "\t</div>\n";
     $input .= "*/\n";
     return empty($input) ? null : $input;
+  }
+
+  public function getJS($tabela, $fields){
+    $nomeClass = ucfirst($tabela);
+    
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+    $js .= "\t\t\n";
+
+
+
+
+
+
+    return $js;
   }
 
   private function getType($field){
