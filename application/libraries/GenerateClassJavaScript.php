@@ -21,7 +21,8 @@ class GenerateClassJavascript {
   private function buildJS($table, $fields){
     $nomeClass = ucfirst($table->TABLE_NAME);
     $columns = $this->getFieldColumn($fields);
-    $lastNum = count($fields)+1;
+    $fieldPK = $this->getFieldColumnPK($fields);
+    $lastNum = count($fields);
     $js  = "\"uses strict\";
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError(\"Cannot call a class as a function\"); } }
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if (\"value\" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
@@ -48,7 +49,7 @@ function () {
       return \$('#myTable').DataTable({
         dom: \"<'text-muted'Bi>\\n        <'table-responsive'tr>\\n        <'mt-4'p>\",
         buttons: ['copyHtml5', {
-          extend: 'print',
+          extend: 'print', 
           autoPrint: false
         }],
         language: {
@@ -60,15 +61,24 @@ function () {
         autoWidth: false,
         ajax: url_get,
         deferRender: true,
-        order: [1, 'asc'],
+        order: [{$lastNum}, 'desc'],
         columns: [
   {$columns}
         ],
         columnDefs: [{
+          targets: 0,
+          render: function render(data, type, row, meta) {
+            return `
+            <div class='custom-control custom-control-nolabel custom-checkbox'>
+              <input type='checkbox' class='custom-control-input' name='selectedRow[]' id='p\${row['{$fieldPK->COLUMN_NAME}']}' value='\${row['{$fieldPK->COLUMN_NAME}']}'>
+              <label class='custom-control-label' for='p\${row['{$fieldPK->COLUMN_NAME}']}'></label>
+            </div>`;
+          }
+        },{
           targets: {$lastNum},
           render: function render(data, type, row, meta) {
             return `
-            <a class='btn btn-sm btn-icon btn-secondary' href='#\${data}'>
+            <a class='btn btn-sm btn-icon btn-secondary' href='\${url_upd}/\${data}'>
               <i class='fa fa-pencil-alt'></i>
             </a>
             <a class='btn btn-sm btn-icon btn-secondary' href='#\${data}'>
@@ -78,8 +88,15 @@ function () {
         }]
       });
     }
-  }, {
-    
+  },{
+    key: 'setbtnFloatedAdd',
+    value: function setbtnFloatedAdd(){
+      var self = this;
+      $('#btnFloatedAdd').on('click', function(e){
+        self.table.ajax.reload();
+      })
+    }
+  },{
     key: \"searchRecords\",
     value: function searchRecords() {
       var self = this;
@@ -181,6 +198,15 @@ function () {
     $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
     fwrite($file, $txt);
     fclose($file);
+  }
+
+  private function getFieldColumnPK($fields){
+    $columns = "";
+    foreach ($fields as $key => $field) {
+      if($field->COLUMN_KEY == "PRI"){
+        return $field;
+      }
+    }
   }
 
   private function getFieldColumn($fields){
