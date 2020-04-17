@@ -14,13 +14,15 @@ class GenerateClassView{
     $tables = $this->CI->gera->getTables($nameTable);
     foreach ($tables as $key => $table) {
       $fields = $this->CI->gera->getFields($table->TABLE_NAME);
-      $this->buildView($table, $fields);
-      $this->buildViewCreate($table, $fields);
-      $this->buildViewUpdate($table, $fields);
+      $foreignKeys = $this->CI->gera->getTableReferences($table->TABLE_NAME);
+      $this->buildViewGrid($table, $fields);
+      $this->buildViewView($table, $fields, $foreignKeys);
+      $this->buildViewCreate($table, $fields, $foreignKeys);
+      $this->buildViewUpdate($table, $fields, $foreignKeys);
     }
   }
 
-  private function buildView($table, $fields){
+  private function buildViewGrid($table, $fields){
     $opt = $this->getOptionSelected($fields);
     $th  = $this->getFieldTh($fields);
     $td  = $this->getFieldTd($fields);
@@ -33,20 +35,20 @@ class GenerateClassView{
       <div class='wrapper'>
         <!-- .page -->
         <div class='page'>
-        <?php if(\$response->method !== 'GET'): ?>
-          <?php if(\$response->status == 'FALSE'): ?>
+        <?php if(\$response['method'] !== 'GET'): ?>
+          <?php if(\$response['status'] == 'FALSE'): ?>
           <!-- .page-message -->
           <div class='page-message bg-warning' role='alert'>
-            <span class='mr-5'><?= \$response->message ?></span> <a href='#' class='btn btn-sm btn-icon btn-warning' aria-label='Close' onclick='$(this).parent().fadeOut()'><span aria-hidden='true'><i class='fa fa-times'></i></span></a>
+            <span class='mr-5'><?= \$response['message'] ?></span> <a href='#' class='btn btn-sm btn-icon btn-warning' aria-label='Close' onclick='$(this).parent().fadeOut()'><span aria-hidden='true'><i class='fa fa-times'></i></span></a>
           </div><!-- /.page-message -->
           <?php else: ?>
           <!-- .page-message -->
           <div class='page-message bg-success' role='alert'>
-            <span class='mr-5'><?= \$response->message ?></span> <a href='#' class='btn btn-sm btn-icon btn-success' aria-label='Close' onclick='$(this).parent().fadeOut()'><span aria-hidden='true'><i class='fa fa-times'></i></span></a>
+            <span class='mr-5'><?= \$response['message'] ?></span> <a href='#' class='btn btn-sm btn-icon btn-success' aria-label='Close' onclick='$(this).parent().fadeOut()'><span aria-hidden='true'><i class='fa fa-times'></i></span></a>
           </div><!-- /.page-message -->    
           <?php endif; ?>
         <?php else: ?>
-          <?php if(\$response->status == 'FALSE'): ?>
+          <?php if(\$response['status'] == 'FALSE'): ?>
           <!-- .page-message -->
           <div class='page-message bg-warning' role='alert'>
             <span class='mr-5'>Falha ao consultar o usuário!</span> <a href='#' class='btn btn-sm btn-icon btn-warning' aria-label='Close' onclick='$(this).parent().fadeOut()'><span aria-hidden='true'><i class='fa fa-times'></i></span></a>
@@ -159,13 +161,40 @@ class GenerateClassView{
 <script>
 var url_get = '<?= base_url('{$table->TABLE_NAME}/get'); ?>';
 var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
-</script>";
-    $this->saveFile($nameClass, $nameClass, $view);
+var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
+</script>
+
+<!-- Central modal -->
+<div class='modal fade' id='modalDeleteRegistro' tabindex='-1' role='dialog' aria-labelledby='ModalDeleteLabel' aria-hidden='true'>
+  <!-- .modal-dialog -->
+  <div class='modal-dialog modal-dialog-centered' role='document'>
+    <!-- .modal-content -->
+    <div class='modal-content'>
+      <!-- .modal-header -->
+      <div class='modal-header'>
+        <h5 id='ModalDeleteLabel' class='modal-title'> Deseja Deletar este Registro? </h5>
+      </div><!-- /.modal-header -->
+      <?= form_open('{$table->TABLE_NAME}/delete') ?>
+        <!-- .modal-body -->
+        <div class='modal-body'>
+          <input type='hidden' id='DeleteById' name='Id' value=''>
+        </div><!-- /.modal-body -->
+        <!-- .modal-footer -->
+        <div class='modal-footer'>
+          <button type='submit' class='btn btn-primary'>Deletar</button>
+          <button type='button' class='btn btn-light' data-dismiss='modal'>Cancelar</button>
+        </div><!-- /.modal-footer -->
+      <?= form_close() ?>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+";
+    $this->saveFile($nameClass, "Grid".$nameClass, $view);
   }
   
-  private function buildViewCreate($table, $fields){
+  private function buildViewCreate($table, $fields, $foreignKeys){
     $nameClass = ucfirst($table->TABLE_NAME);
-    $inputs = $this->getInputInsert($fields);
+    $inputs = $this->getInputInsert($fields, $foreignKeys);
     $view = "
     <!-- .app-main -->
     <main class='app-main'>
@@ -253,14 +282,15 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
 <script>
   var url_get = '<?= base_url('{$table->TABLE_NAME}/create'); ?>';
   var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
+  var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
 </script>
 ";
     $this->saveFile($nameClass, "Create".$nameClass, $view);
   }
 
-  private function buildViewUpdate($table, $fields){
+  private function buildViewUpdate($table, $fields, $foreignKeys){
     $nameClass = ucfirst($table->TABLE_NAME);
-    $inputs = $this->getInputUpdate($fields);
+    $inputs = $this->getInputUpdate($fields, $foreignKeys);
     $fieldPK = $this->getFieldPK($fields);
     $view = "
     <!-- .app-main -->
@@ -349,9 +379,101 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
 <script>
   var url_get = '<?= base_url('{$table->TABLE_NAME}/get'); ?>';
   var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
+  var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
 </script>
 ";
     $this->saveFile($nameClass, "Edit".$nameClass, $view);
+  }
+
+  private function buildViewView($table, $fields, $foreignKeys){
+    $nameClass = ucfirst($table->TABLE_NAME);
+    $inputs = $this->getInputView($fields, $foreignKeys);
+    $fieldPK = $this->getFieldPK($fields);
+    $view = "
+    <!-- .app-main -->
+    <main class='app-main'>
+      <!-- .wrapper -->
+      <div class='wrapper'>
+        <!-- .page -->
+        <div class='page'>
+          <?php if(isset(\$response)): ?>
+            <?php if(\$response['method'] !== 'GET'): ?>
+              <?php if(\$response['status'] == 'FALSE'): ?>
+              <!-- .page-message -->
+              <div class='page-message bg-warning' role='alert'>
+                <span class='mr-5'><?= \$response['message'] ?></span>
+                  <a href='#' class='btn btn-sm btn-icon btn-warning' aria-label='Close' onclick='$(this).parent().fadeOut()'>
+                    <span aria-hidden='true'><i class='fa fa-times'></i></span>
+                  </a>
+              </div><!-- /.page-message -->
+              <?php else: ?>
+              <!-- .page-message -->
+              <div class='page-message bg-success' role='alert>
+                <span class='mr-5'><?= \$response['message'] ?></span>
+                <a href='#' class='btn btn-sm btn-icon btn-success' aria-label='Close' onclick='$(this).parent().fadeOut()'>
+                  <span aria-hidden='true'><i class='fa fa-times'></i></span>
+                </a>
+              </div><!-- /.page-message -->    
+              <?php endif; ?>
+            <?php else: ?>
+              <?php if(\$response['status'] == 'FALSE'): ?>
+              <!-- .page-message -->
+              <div class='page-message bg-warning' role='alert'>
+                <span class='mr-5'>Falha ao consultar o registro!</span>
+                <a href='#' class='btn btn-sm btn-icon btn-warning' aria-label='Close' onclick='$(this).parent().fadeOut()'>
+                  <span aria-hidden='true'><i class='fa fa-times'></i></span>
+                </a>
+              </div><!-- /.page-message -->
+              <?php endif; ?>
+            <?php endif; ?>     
+          <?php endif; ?>
+          <!-- .page-inner -->
+          <div class='page-inner'>
+            <!-- .page-title-bar -->
+            <header class='page-title-bar'>
+              <!-- .breadcrumb -->
+              <nav aria-label='breadcrumb'>
+                <ol class='breadcrumb'>
+                  <li class='breadcrumb-item active'>
+                    <a href='<?= base_url('{$nameClass}') ?>'><i class='breadcrumb-icon fa fa-angle-left mr-2'></i>Voltar</a>
+                  </li>
+                </ol>
+              </nav><!-- /.breadcrumb -->
+            </header><!-- /.page-title-bar -->
+            <!-- .page-section -->
+            <div class='page-section'>
+              <!-- .section-block -->
+              <div class='section-block'>            
+                <!-- .page-title-bar -->
+                <header class='page-title-bar'>
+                  <!-- page title stuff goes here -->
+                  <h1 class='page-title'> {$table->TABLE_COMMENT} </h1>
+                </header><!-- /.page-title-bar -->
+                <!-- .base-style -->
+                <div id='base-style' class='card'>
+                  <!-- .card-body -->
+                  <div class='card-body'>
+                    <!-- .form -->
+                      <!-- .fieldset -->
+                      <fieldset>
+                        <legend>Alteração do registro</legend> <!-- .form-group -->
+{$inputs}
+                      </fieldset><!-- /.fieldset -->
+                  </div><!-- /.card-body -->
+                </div><!-- /.base-style -->
+              </div><!-- /.section-block -->
+            </div><!-- /.page-section -->
+          </div><!-- /.page-inner -->
+        </div><!-- /.page -->
+      </div><!-- /.wrapper -->
+    </main><!-- /.app-main -->
+<script>
+  var url_get = '<?= base_url('{$table->TABLE_NAME}/get'); ?>';
+  var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
+  var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
+</script>
+";
+    $this->saveFile($nameClass, "View".$nameClass, $view);
   }
 
   private function saveFile($pasta, $class, $txt){
@@ -383,15 +505,16 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
   private function getFieldTh($fields){
     $th = "";
     foreach ($fields as $key => $field) {
+      if($field->COLUMN_KEY == "PRI"){
+        $th .= "\t\t\t\t\t\t\t\t\t\t\t\t<th style='width:100px; min-width:120px;'> # </th>\n";
+      }
+    }
+    foreach ($fields as $key => $field) {
       if($field->COLUMN_KEY <> "PRI"){
         $th .= "\t\t\t\t\t\t\t\t\t\t\t\t<th> {$field->COLUMN_COMMENT} </th>\n";
       }
     }
-    foreach ($fields as $key => $field) {
-      if($field->COLUMN_KEY == "PRI"){
-        $th .= "\t\t\t\t\t\t\t\t\t\t\t\t<th style='width:100px; min-width:100px;'> &nbsp; </th>\n";
-      }
-    }
+
     return $th;
   }
 
@@ -403,10 +526,10 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
     return $td;
   }
 
-  private function getInputInsert($fields){
+  private function getInputInsert($fields, $foreignKeys){
     $inputs = "";
     foreach ($fields as $key => $field) {
-      if(strtolower($field->COLUMN_NAME) == 'usersid')
+      if(strpos(strtolower($field->COLUMN_NAME), 'usersid') !== FALSE)
         continue;
       if ($field->COLUMN_KEY <> "PRI"){
         $inputs .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
@@ -419,11 +542,21 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
           $inputs .= "\t\t\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<option value=''> Selecione </option>\n";
           foreach ($items as $key => $item) {
-            $inputs .= "\t\t\t\t\t\t\t\t<option value='{$item}'> {$item} </option>\n";
+            $inputs .= "\t\t\t\t\t\t\t\t<option value='{$item}' <?= isset(\$response['data']['{$field->COLUMN_NAME}']) ? \$response['data']['{$field->COLUMN_NAME}'] == '{$item}' ? 'selected' : '' : '' ?>> {$item} </option>\n";
           }
           $inputs .= "\t\t\t\t\t\t\t</select>\n";
         } else {
-          $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='{$field->COLUMN_DEFAULT}' {$isnull}>\n";
+          $hasFK = FALSE;
+          foreach ($foreignKeys as $key => $fk) {
+            if($fk->COLUMN_NAME == $field->COLUMN_NAME){
+              $hasFK = TRUE;
+              $inputs .= "\t\t\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull}>\n";
+              $inputs .= "\t\t\t\t\t\t\t\t<?= getOptionToSelect('{$fk->REFERENCED_TABLE_NAME}','{$fk->REFERENCED_COLUMN_NAME}', '', isset(\$response['data']['{$field->COLUMN_NAME}']) ? \$response['data']['{$field->COLUMN_NAME}'] : '', \$login->data->token) ?>\n";
+              $inputs .= "\t\t\t\t\t\t\t</select>\n";
+            }
+          }
+          if(!$hasFK)
+            $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data']['{$field->COLUMN_NAME}']) ? \$response['data']['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull}>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";
@@ -456,6 +589,48 @@ var url_upd = '<?= base_url('{$table->TABLE_NAME}/edit'); ?>';
           $inputs .= "\t\t\t\t\t\t\t</select>\n";
         } else {
           $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= \$response['data'][0]['{$field->COLUMN_NAME}'] ?>' {$isnull}>\n";
+          $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
+          $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
+          $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";
+        }
+        $inputs .= "\t\t\t\t\t\t</div>\n";
+        
+      }
+    }
+    return $inputs;
+  }
+
+  private function getInputView($fields, $foreignKeys){
+    $inputs = "";
+    foreach ($fields as $key => $field) {
+      if(strpos(strtolower($field->COLUMN_NAME), 'usersid') !== FALSE)
+        continue;
+      if ($field->COLUMN_KEY <> "PRI"){
+        $inputs .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
+        $inputs .= "\t\t\t\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
+        $type = $this->getType($field);
+        $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
+        if($type == "select"){
+          $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
+          $items = explode(",", $list);
+          $inputs .= "\t\t\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull} disabled>\n";
+          $inputs .= "\t\t\t\t\t\t\t\t<option value=''> Selecione </option>\n";
+          foreach ($items as $key => $item) {
+            $inputs .= "\t\t\t\t\t\t\t\t<option value='{$item}' <?= isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? \$response['data'][0]['{$field->COLUMN_NAME}'] == '{$item}' ? 'selected' : '' : '' ?>> {$item} </option>\n";
+          }
+          $inputs .= "\t\t\t\t\t\t\t</select>\n";
+        } else {
+          $hasFK = FALSE;
+          foreach ($foreignKeys as $key => $fk) {
+            if($fk->COLUMN_NAME == $field->COLUMN_NAME){
+              $hasFK = TRUE;
+              $inputs .= "\t\t\t\t\t\t\t<select name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='custom-select' placeholder='{$field->COLUMN_COMMENT}' {$isnull} disabled>\n";
+              $inputs .= "\t\t\t\t\t\t\t\t<?= getOptionToSelect('{$fk->REFERENCED_TABLE_NAME}','{$fk->REFERENCED_COLUMN_NAME}', '', isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? \$response['data'][0]['{$field->COLUMN_NAME}'] : '', \$login->data->token) ?>\n";
+              $inputs .= "\t\t\t\t\t\t\t</select>\n";
+            }
+          }
+          if(!$hasFK)
+            $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? \$response['data'][0]['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull} disabled>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";

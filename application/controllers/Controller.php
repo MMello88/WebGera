@@ -12,6 +12,7 @@ class Controller extends CI_Controller {
     $this->generateclassapi->init($table);
     $this->generateclassview->init($table);
     $this->generateclassjavascript->init($table);
+    $this->generateclasscontroller->init($table);
   }
 
   private function oldclasses($table = ""){

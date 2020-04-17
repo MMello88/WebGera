@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class GenerateClassApi {
 
   private $CI;
-  private $filename = "C:\\xampp\\htdocs\\WebApi\\application\\controllers\\apiGerado\\";
+  private $filename = "C:\\xampp\\htdocs\\WebApi\\application\\controllers\\api\\";
   
   public function __constructor(){
     
@@ -70,10 +70,12 @@ class {$nameClass} extends MY_Controller {
   }
 
   private function saveFile($class, $txt){
-    $filename = $this->filename . $class.".php";
-    $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
-    fwrite($file, $txt);
-    fclose($file);
+    if (!in_array($class, ['Users', 'Menus', 'Api_keys', 'Api_limit', '__efmigrationshistory'])){
+      $filename = $this->filename . $class.".php";
+      $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
+      fwrite($file, $txt);
+      fclose($file);
+    }
   }
 
   private function getFieldFKUsuario($fields){

@@ -49,4 +49,13 @@ class Gera_model extends CI_Model {
              AND c.table_name = '$table'";
     return $this->db->query($sql)->result();
   }
+
+  public function getTableReferences($table){
+    $sql = "SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+            FROM information_schema.key_column_usage 
+          WHERE table_schema = 'matilab872_gestao' 
+            AND table_name = '{$table}'
+            AND constraint_name <> 'PRIMARY'";
+    return $this->db->query($sql)->result();
+  }
 }
