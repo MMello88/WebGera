@@ -19,6 +19,7 @@ class GenerateClassController{
   }
 
   private function buildController($table, $fields){
+    $fieldPK = $this->getFieldPK($fields);
     $nameClass = ucfirst($table->TABLE_NAME);
     $controller = "
     <?php
@@ -61,19 +62,29 @@ class GenerateClassController{
     
       public function add(){
         if(\$_POST){
+          \$salvarEVoltar = isset(\$_POST['cbxSaveBack']) ? TRUE : FALSE;
+          unset(\$_POST['cbxSaveBack']);
+
           \$response = \$this->sendPost('api/{$table->TABLE_NAME}/create', \$this->data['login']->data->token, \$this->input->post(), true);
-          \$response['data'] = \$_POST;
+
+          if(\$response['status'] == 'FALSE')
+            \$response['data'] = \$_POST;
+          
+          if(\$salvarEVoltar) \$response['data']['cbxSaveBack'] = 'on';
+          
           \$this->session->set_flashdata('response', \$response); 
-          redirect('{$table->TABLE_NAME}/create');
+
+          if(\$response['status'] == 'FALSE'){
+            redirect('{$table->TABLE_NAME}/create');
+          } else {
+            \$salvarEVoltar ? redirect('{$table->TABLE_NAME}') : redirect('{$table->TABLE_NAME}/edit/'.\$response['data'][0]['{$fieldPK->COLUMN_NAME}']);
+          }
         }
       }
     
       public function edit(\$Id){
         if (\$this->session->flashdata('response')){
           \$this->data['response'] = \$this->session->flashdata('response');
-          if(\$this->data['response']['status'] == 'FALSE'){
-            \$this->data['response']['data'] = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true)['data'];
-          }
         } else {
           \$this->data['response'] = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true);
         }
@@ -91,10 +102,25 @@ class GenerateClassController{
     
       public function update(\$Id){
         if(\$_POST){
+          \$salvarEVoltar = isset(\$_POST['cbxSaveBack']) ? TRUE : FALSE;
+          unset(\$_POST['cbxSaveBack']);
+
           \$response = \$this->sendPost('api/{$table->TABLE_NAME}/update/'.\$Id, \$this->data['login']->data->token, \$this->input->post(), true);
-          \$response['data'] = \$_POST;
+
+          if(\$response['status'] == 'FALSE'){
+            \$_POST['{$fieldPK->COLUMN_NAME}'] = \$Id;
+            \$response['data'][0] = \$_POST;
+          }
+
+          if(\$salvarEVoltar) \$response['data']['cbxSaveBack'] = 'on';
+
           \$this->session->set_flashdata('response', \$response); 
-          redirect('{$table->TABLE_NAME}/edit/'.\$Id);
+          
+          if(\$response['status'] == 'FALSE'){
+            redirect('{$table->TABLE_NAME}/edit/'.\$Id);
+          } else {
+            \$salvarEVoltar ? redirect('{$table->TABLE_NAME}') : redirect('{$table->TABLE_NAME}/edit/'.\$Id);
+          }
         }
       }
     
@@ -135,6 +161,14 @@ class GenerateClassController{
       $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
       fwrite($file, $txt);
       fclose($file);
+    }
+  }
+
+  private function getFieldPK($fields){
+    foreach ($fields as $key => $field) {
+      if ($field->COLUMN_KEY == "PRI"){
+        return $field;
+      }
     }
   }
 }
