@@ -62,7 +62,14 @@ class Gera_model extends CI_Model {
               FROM FOREIGNKEYS
              WHERE REFERENCED_TABLE_NAME = '$table'
                AND HAS_PARENT = 'TRUE'";
-    return $this->db->query($sql)->result();
+    $FKs = $this->db->query($sql)->result();
+    foreach ($FKs as $key => $FK) {
+      $FKs[$key]->TABLE = $this->getTables($FK->TABLE_NAME)[0];
+      $FKs[$key]->TABLE->FIELDS = $this->getFields($FK->TABLE_NAME);
+      $FKs[$key]->TABLE->FOREIGNKEYS = $this->getFKReferences($FK->TABLE_NAME);
+      $FKs[$key]->REFERENCED_TABLE = $this->getTables($FK->REFERENCED_TABLE_NAME)[0];
+    }
+    return $FKs;
   }
 
   /*
