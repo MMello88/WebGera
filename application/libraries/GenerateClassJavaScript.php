@@ -9,7 +9,14 @@ class GenerateClassJavascript {
   public function __constructor(){
   }
 
-  public function init($nameTable = ""){
+  public function saveToProject($folder){
+    if (!file_exists("C:\\xampp\\htdocs\\{$folder}\\"))
+      die("Caminho do Projeto não encontrado");
+    $this->filename = "C:\\xampp\\htdocs\\{$folder}\\assets\\javascript\\api\\";
+  }
+
+  public function init($folder, $nameTable = ""){
+    $this->saveToProject($folder);
     $this->CI = &get_instance();
     $tables = $this->CI->gera->getTablesPai($nameTable);
     foreach ($tables as $key => $table) {
@@ -218,6 +225,7 @@ function () {
     $nomeClass = ucfirst($table->TABLE_NAME);
     $columns = $this->getFieldColumn($fields);
     $fieldPK = $this->getFieldColumnPK($fields);
+    $idPkFk = strtolower($fieldPK->COLUMN_NAME);
     $lastNum = count($fields);
     $js  = "\"uses strict\";
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError(\"Cannot call a class as a function\"); } }
@@ -282,7 +290,7 @@ function () {
             <a class='btn btn-sm btn-icon btn-secondary' href='\${url_upd_{$table->TABLE_NAME}}/\${data}'>
               <i class='fa fa-pencil-alt'></i>
             </a>
-            <a class='btn btn-sm btn-icon btn-secondary' id='btnDeleteClick' data-toggle='modal' data-target='#modalDeleteRegistro' data-id='\${data}' href='#\${data}'>
+            <a class='btn btn-sm btn-icon btn-secondary' id='btnDeleteClick' data-toggle='modal' data-target='#modalDeleteRegistro{$table->TABLE_NAME}' data-{$idPkFk}='\${data}' href='#\${data}'>
               <i class='far fa-trash-alt'></i>
             </a>
             `;
@@ -302,8 +310,8 @@ function () {
     key: 'setDeleteClick',
     value: function setDeleteClick(){
       var self = this;
-      $('#modalDeleteRegistro').on('show.bs.modal', function (event) {
-        document.getElementById('DeleteById').value = $(event.relatedTarget).data('id');
+      $('#modalDeleteRegistro{$table->TABLE_NAME}').on('show.bs.modal', function (event) {
+        document.getElementById('DeleteBy{$idPkFk}').value = $(event.relatedTarget).data('{$idPkFk}');
       })
     }
   },{

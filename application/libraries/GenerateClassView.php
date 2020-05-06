@@ -9,7 +9,14 @@ class GenerateClassView{
   public function __constructor(){
   }
 
-  public function init($nameTable = ""){
+  public function saveToProject($folder){
+    if (!file_exists("C:\\xampp\\htdocs\\{$folder}\\"))
+      die("Caminho do Projeto não encontrado");
+    $this->filename = "C:\\xampp\\htdocs\\{$folder}\\views\\api\\";
+  }
+
+  public function init($folder, $nameTable = ""){
+    $this->saveToProject($folder);
     $this->CI = &get_instance();
     $tables = $this->CI->gera->getTablesPai($nameTable);
     foreach ($tables as $key => $table) {
@@ -645,9 +652,11 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
     ";
 
     foreach ($tabelasFilho as $key => $tableFilho) {
+      $idPkFk = strtolower($this->getFieldPK($tableFilho->TABLE->FIELDS)->COLUMN_NAME);
+      
       $view .= "
       <!-- Central modal -->
-      <div class='modal fade' id='modalDeleteRegistro' tabindex='-1' role='dialog' aria-labelledby='ModalDeleteLabel' aria-hidden='true'>
+      <div class='modal fade' id='modalDeleteRegistro{$tableFilho->TABLE->TABLE_NAME}' tabindex='-1' role='dialog' aria-labelledby='ModalDeleteLabel' aria-hidden='true'>
         <!-- .modal-dialog -->
         <div class='modal-dialog modal-dialog-centered' role='document'>
           <!-- .modal-content -->
@@ -656,10 +665,14 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
             <div class='modal-header'>
               <h5 id='ModalDeleteLabel' class='modal-title'> Deseja Deletar este Registro? </h5>
             </div><!-- /.modal-header -->
-            <?= form_open('{$tableFilho->TABLE->TABLE_NAME}/delete') ?>
+          <?php if(isset(\$response['data'][0]['{$fieldPK->COLUMN_NAME}'])): ?>
+            <?= form_open('{$tableFilho->TABLE->TABLE_NAME}/delete/'.\$nameView.'/'.\$response['data'][0]['{$fieldPK->COLUMN_NAME}']) ?>
+          <?php else: ?>
+            <?= form_open('{$tableFilho->TABLE->TABLE_NAME}/delete/'.\$nameView.'/') ?>
+          <?php endif; ?>
               <!-- .modal-body -->
               <div class='modal-body'>
-                <input type='hidden' id='DeleteById' name='Id' value=''>
+                <input type='hidden' id='DeleteBy{$idPkFk}' name='Id' value=''>
               </div><!-- /.modal-body -->
               <!-- .modal-footer -->
               <div class='modal-footer'>
@@ -743,6 +756,7 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
         $inputs .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
         $inputs .= "\t\t\t\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
         $type = $this->getType($field);
+        $prop = $this->getComplentoType($field);
         $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
         if($type == "select"){
           $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
@@ -770,8 +784,13 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
               }
             }
           }
-          if(!$hasFK)
-            $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data']['{$field->COLUMN_NAME}']) ? \$response['data']['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull}>\n";
+          if(!$hasFK){
+            if($type == "datetime-local"){
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data']['{$field->COLUMN_NAME}']) ? (substr(\$response['data']['{$field->COLUMN_NAME}'],10,1) !== 'T' ? date_format(date_create_from_format('Y-m-d H:i:s', \$response['data']['{$field->COLUMN_NAME}']),'Y-m-d\TH:i') : \$response['data']['{$field->COLUMN_NAME}']) : '{$field->COLUMN_DEFAULT}' ?>' {$isnull}>\n";
+            } else {
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data']['{$field->COLUMN_NAME}']) ? \$response['data']['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull}>\n";
+            }
+          }
           $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";
@@ -792,6 +811,7 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
         $inputs .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
         $inputs .= "\t\t\t\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
         $type = $this->getType($field);
+        $prop = $this->getComplentoType($field);
         $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
         if($type == "select"){
           $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
@@ -819,8 +839,13 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
               }
             }
           }          
-          if(!$hasFK)
-            $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= \$response['data'][0]['{$field->COLUMN_NAME}'] ?>' {$isnull}>\n";
+          if(!$hasFK){
+            if($type == "datetime-local"){
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= (substr(\$response['data'][0]['{$field->COLUMN_NAME}'],10,1) !== 'T' ? date_format(date_create_from_format('Y-m-d H:i:s', \$response['data'][0]['{$field->COLUMN_NAME}']),'Y-m-d\TH:i') : \$response['data'][0]['{$field->COLUMN_NAME}']) ?>' {$isnull}>\n";
+            } else {
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= \$response['data'][0]['{$field->COLUMN_NAME}'] ?>' {$isnull}>\n";
+            }
+          }
           $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";
@@ -841,6 +866,7 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
         $inputs .= "\t\t\t\t\t\t\t<div class='form-group'>\n";
         $inputs .= "\t\t\t\t\t\t\t\t<label for='{$field->COLUMN_NAME}'>{$field->COLUMN_COMMENT}</label>\n";
         $type = $this->getType($field);
+        $prop = $this->getComplentoType($field);
         $isnull = $field->IS_NULLABLE == "NO" ? "required" : "";
         if($type == "select"){
           $list = str_replace(")", "", str_replace("'", "", str_replace("enum(", "", $field->COLUMN_TYPE)));
@@ -861,8 +887,13 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
               $inputs .= "\t\t\t\t\t\t\t</select>\n";
             }
           }
-          if(!$hasFK)
-            $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? \$response['data'][0]['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull} disabled>\n";
+          if(!$hasFK){
+            if($type == "datetime-local"){
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? (substr(\$response['data'][0]['{$field->COLUMN_NAME}'],10,1) !== 'T' ? date_format(date_create_from_format('Y-m-d H:i:s', \$response['data'][0]['{$field->COLUMN_NAME}']),'Y-m-d\TH:i') : \$response['data'][0]['{$field->COLUMN_NAME}'])  : '{$field->COLUMN_DEFAULT}' ?>' {$isnull} disabled>\n";
+            } else {
+              $inputs .= "\t\t\t\t\t\t\t<input type='{$type}' {$prop} name='{$field->COLUMN_NAME}' id='{$field->COLUMN_NAME}' class='form-control' placeholder='{$field->COLUMN_COMMENT}' value='<?= isset(\$response['data'][0]['{$field->COLUMN_NAME}']) ? \$response['data'][0]['{$field->COLUMN_NAME}'] : '{$field->COLUMN_DEFAULT}' ?>' {$isnull} disabled>\n";
+            }
+          }
           $inputs .= "\t\t\t\t\t\t\t<?php if(isset(\$response)): ?>\n";
           $inputs .= "\t\t\t\t\t\t\t\t<div class='invalid-feedback' style='display:block'><?= isset(\$response['error']['{$field->COLUMN_NAME}']) ? \$response['error']['{$field->COLUMN_NAME}'] : ''; ?></div>\n";
           $inputs .= "\t\t\t\t\t\t\t<?php endif; ?>\n";
@@ -874,11 +905,19 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
     return $inputs;
   }
 
+  private function getComplentoType($field){
+    $type = $field->DATA_TYPE == "int" ? "step='1'" : "";
+    $type .= $field->DATA_TYPE == "float" ? "step='0.01'" : "";
+    $type .= $field->DATA_TYPE == "decimal" ? "step='0.01'" : "";
+    return $type;
+  }
+
   private function getType($field){
     $type = $field->DATA_TYPE == "varchar" ? "text" : "";
     $type .= $field->DATA_TYPE == "longtext" ? "text" : "";
     $type .= $field->DATA_TYPE == "int" ? "number" : "";
     $type .= $field->DATA_TYPE == "float" ? "number" : "";
+    $type .= $field->DATA_TYPE == "decimal" ? "number" : "";
     $type .= $field->DATA_TYPE == "enum" ? "select" : "";
     $type .= $field->DATA_TYPE == "date" ? "date" : "";
     $type .= $field->DATA_TYPE == "datetime" ? "datetime-local" : "";
@@ -956,7 +995,7 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
               <nav aria-label='breadcrumb'>
                 <ol class='breadcrumb'>
                   <li class='breadcrumb-item active'>
-                    <a href='<?= base_url('{$nameClassPai}') ?>'><i class='breadcrumb-icon fa fa-angle-left mr-2'></i>Voltar</a>
+                    <a href='<?= base_url('{$nameClassPai}/'.\$parentView.'/'.\$IdParent) ?>'><i class='breadcrumb-icon fa fa-angle-left mr-2'></i>Voltar</a>
                   </li>
                 </ol>
               </nav><!-- /.breadcrumb -->
@@ -979,6 +1018,9 @@ var url_view = '<?= base_url('{$table->TABLE_NAME}/view'); ?>';
                       <fieldset>
                         <legend>Alteração do registro</legend> <!-- .form-group -->
 {$inputs}
+                        <div class='form-actions'>
+                          <button class='btn btn-secondary ml-auto' type='button' onclick=\"window.location.href='<?= base_url('{$nameClassPai}/'.\$parentView.'/'.\$IdParent) ?>'\">Cancelar</button>
+                        </div>
                       </fieldset><!-- /.fieldset -->
                   </div><!-- /.card-body -->
                 </div><!-- /.base-style -->

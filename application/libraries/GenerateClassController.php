@@ -4,12 +4,19 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class GenerateClassController{
 
   protected $CI;
-  private $filename = "C:\\xampp\\htdocs\\WebSite\\application\\controllers\\";
+  private $filename;
   
   public function __constructor(){
   }
 
-  public function init($nameTable = ""){
+  private function saveToProject($folder){
+    if (!file_exists("C:\\xampp\\htdocs\\{$folder}\\"))
+      die("Caminho do Projeto não encontrado");
+    $this->filename = "C:\\xampp\\htdocs\\{$folder}\\application\\controllers\\";
+  }
+
+  public function init($folder, $nameTable = ""){
+    $this->saveToProject($folder);
     $this->CI = &get_instance();
     $tables = $this->CI->gera->getTablesPai($nameTable);
     foreach ($tables as $key => $table) {
@@ -46,10 +53,9 @@ class GenerateClassController{
   private function buildController($table, $fields, $tabelasFilho){
     $fieldPK = $this->getFieldPK($fields);
     $nameClass = ucfirst($table->TABLE_NAME);
-    $scripts = "";
-    foreach ($tabelasFilho as $tabelaFilho) {
-      $scripts .= "\t\t\t\t\$this->scripts('assets/javascript/api/{$tabelaFilho->TABLE->TABLE_NAME}/{$tabelaFilho->TABLE->TABLE_NAME}.js');\n";
-    }
+    $scripts = $this->getScriptJS($tabelasFilho);
+    $comeFromChild = $this->getComeFromChild($table);
+
     $controller = "
     <?php
     defined('BASEPATH') OR exit('No direct script access allowed');
@@ -116,6 +122,7 @@ class GenerateClassController{
         \$this->data['nameView'] = 'edit';
         if (\$this->session->flashdata('response')){
           \$this->data['response'] = \$this->session->flashdata('response');
+{$comeFromChild}
         } else {
           \$this->data['response'] = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true);
         }
@@ -210,6 +217,7 @@ class GenerateClassController{
       }
     
       public function index(){
+        /*
         if (\$this->session->flashdata('response')){
           \$this->data['response'] = \$this->session->flashdata('response');
           if(\$this->data['response']['status'] == 'FALSE'){
@@ -223,6 +231,7 @@ class GenerateClassController{
         \$this->load->view('dashboard/template/header', \$this->data);
         \$this->load->view('api/{$table->TABLE_NAME}/Grid{$nameClass}', \$this->data);
         \$this->load->view('dashboard/template/footer', \$this->data);
+        */
       }
     
       public function get(\$IdParent, \$Id = ''){
@@ -251,8 +260,11 @@ class GenerateClassController{
 
           \$response = \$this->sendPost('api/{$table->TABLE_NAME}/create', \$this->data['login']->data->token, \$this->input->post(), true);
 
-          if(\$response['status'] == 'FALSE')
+          if(\$response['status'] == 'FALSE'){
             \$response['data'] = \$_POST;
+          } else {
+            \$response['comeFromChild'] = 'TRUE';
+          }
           
           if(\$salvarEVoltar) \$response['data']['cbxSaveBack'] = 'on';
           
@@ -298,6 +310,8 @@ class GenerateClassController{
           if(\$response['status'] == 'FALSE'){
             \$_POST['{$fieldPK->COLUMN_NAME}'] = \$Id;
             \$response['data'][0] = \$_POST;
+          } else {
+            \$response['comeFromChild'] = 'TRUE';
           }
 
           if(\$salvarEVoltar) \$response['data']['cbxSaveBack'] = 'on';
@@ -312,11 +326,11 @@ class GenerateClassController{
         }
       }
     
-      public function delete(){
+      public function delete(\$parentView, \$IdParent){
         if(\$_POST){
           \$Id = \$_POST['Id'];
     
-          \$response = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true);    
+          \$response = \$this->sendGet('api/{$table->TABLE_NAME}/getByParent/'.\$IdParent.'/'.\$Id, \$this->data['login']->data->token, true);    
     
           if(empty(\$response['data'])){
             \$this->data['heading'] = 'Dado não encontrado.';
@@ -324,15 +338,18 @@ class GenerateClassController{
             \$this->load->view('errors/html/my_error_404', \$this->data);
           } else {
             \$response = \$this->sendDelete('api/{$table->TABLE_NAME}/delete/'.\$Id, \$this->data['login']->data->token, true);
+            \$response['comeFromChild'] = 'TRUE';
             \$this->session->set_flashdata('response', \$response); 
-            redirect('{$table->TABLE_NAME}');
+            redirect('{$tabelaFilho->REFERENCED_TABLE_NAME}/'.\$parentView.'/'.\$IdParent);
           }
         }
       }
 
-      public function view(\$Id){
+      public function view(\$parentView, \$IdParent, \$Id){
         \$this->data['nameView'] = 'view';
-        \$this->data['response'] = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true);
+        \$this->data['IdParent'] = \$IdParent;
+        \$this->data['parentView'] = \$parentView;
+        \$this->data['response'] = \$this->sendGet('api/{$table->TABLE_NAME}/getByParent/'.\$IdParent.'/'.\$Id, \$this->data['login']->data->token, true);
 
 {$scripts}
         \$this->load->view('dashboard/template/header', \$this->data);
@@ -352,6 +369,25 @@ class GenerateClassController{
       fwrite($file, $txt);
       fclose($file);
     }
+  }
+
+  private function getComeFromChild($table){
+    $comeFromChild = "";
+    if($table->HAS_CHILD === 'TRUE')
+      $comeFromChild = "
+          if(isset(\$this->data['response']['comeFromChild'])){
+            \$this->data['response'] = \$this->sendGet('api/{$table->TABLE_NAME}/get/'.\$Id, \$this->data['login']->data->token, true);
+          }
+      ";
+    return $comeFromChild;
+  }
+
+  private function getScriptJS($tabelasFilho){
+    $scripts = "";
+    foreach ($tabelasFilho as $tabelaFilho) {
+      $scripts .= "\t\t\t\t\$this->scripts('assets/javascript/api/{$tabelaFilho->TABLE->TABLE_NAME}/{$tabelaFilho->TABLE->TABLE_NAME}.js');\n";
+    }
+    return $scripts;
   }
 
   private function getFieldPK($fields){

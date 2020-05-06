@@ -166,8 +166,8 @@ class Gera_model extends CI_Model {
                    UPDATE_TIME, 
                    TABLE_COMMENT
               FROM information_schema.TABLES
-              WHERE table_schema = 'matilab872_gestao'
-                AND TABLE_NAME NOT IN ('api_keys', 'api_limit', 'tabelas', 'colunas', 'foreignkeys', 'menus', 'users', '__efmigrationshistory') ";
+              WHERE table_schema = '{$this->db->database}'
+                AND TABLE_NAME NOT IN ('api_keys', 'api_limit', 'colunas', 'foreignkeys', 'menus', 'perfils', 'perfilsmenu', 'perfilsuser', 'submenus', 'tabelas', 'users', '__efmigrationshistory') ";
     $sql .= !empty($table) ? " AND table_name = '$table'" : "";
     return $this->db->query($sql)->result();
   }
@@ -188,19 +188,19 @@ class Gera_model extends CI_Model {
                   CASE WHEN c.COLUMN_KEY IN ('MUL') 
                         THEN (SELECT k.REFERENCED_TABLE_NAME
                                 FROM information_schema.KEY_COLUMN_USAGE k
-                              WHERE k.table_schema = 'matilab872_gestao' 
+                              WHERE k.table_schema = '{$this->db->database}' 
                                 AND k.table_name = c.table_name
                                 AND k.COLUMN_NAME = c.COLUMN_NAME)
                       ELSE NULL END REFERENCED_TABLE_NAME,
                   CASE WHEN c.COLUMN_KEY IN ('MUL') 
                         THEN (SELECT k.REFERENCED_COLUMN_NAME
                                 FROM information_schema.KEY_COLUMN_USAGE k
-                              WHERE k.table_schema = 'matilab872_gestao' 
+                              WHERE k.table_schema = '{$this->db->database}' 
                                 AND k.table_name = c.table_name
                                 AND k.COLUMN_NAME = c.COLUMN_NAME)
                       ELSE NULL END REFERENCED_COLUMN_NAME
             FROM information_schema.COLUMNS c
-           WHERE c.table_schema = 'matilab872_gestao' 
+           WHERE c.table_schema = '{$this->db->database}' 
              AND c.table_name = '$table'";
     return $this->db->query($sql)->result();
   }
@@ -224,7 +224,7 @@ class Gera_model extends CI_Model {
                   AND r.TABLE_NAME = u.table_name 
                   AND r.REFERENCED_TABLE_NAME = u.REFERENCED_TABLE_NAME
                 ) 
-            WHERE u.table_schema = 'matilab872_gestao' 
+            WHERE u.table_schema = '{$this->db->database}' 
               AND u.table_name = '$table' 
               AND u.constraint_name <> 'PRIMARY'
             ";

@@ -9,7 +9,8 @@ class GenerateTabelas {
     $this->CI =& get_instance();
   }
 
-  public function init($nameTable = ''){
+  public function init($folder, $nameTable = ''){
+    $this->saveToProject($folder);
     $dbTables = $this->CI->gera->getTablesTo($nameTable);
     foreach ($dbTables as $key => $dbTable) {
       $this->table($dbTable);

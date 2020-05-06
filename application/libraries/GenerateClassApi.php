@@ -9,7 +9,14 @@ class GenerateClassApi {
   public function __constructor(){
   }
 
-  public function init($nameTable = ""){
+  public function saveToProject($folder){
+    if (!file_exists("C:\\xampp\\htdocs\\{$folder}\\"))
+      die("Caminho do Projeto não encontrado");
+    $this->filename = "C:\\xampp\\htdocs\\{$folder}Api\\application\\controllers\\api\\";
+  }
+
+  public function init($folder, $nameTable = ""){
+    $this->saveToProject($folder);
     $this->CI =& get_instance();
     $tables = $this->CI->gera->getTablesPai($nameTable);
     foreach ($tables as $key => $table) {
