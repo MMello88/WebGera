@@ -19,6 +19,7 @@ class GenerateClassApi {
     $this->saveToProject($folder);
     $this->CI =& get_instance();
     $tables = $this->CI->gera->getTablesPai($nameTable);
+    print_r($tables);
     foreach ($tables as $key => $table) {
       $fields = $this->CI->gera->getFields($table->TABLE_NAME);
       
@@ -148,12 +149,10 @@ class {$nameClass} extends MY_Controller {
   }
 
   private function saveFile($class, $txt){
-    if (!in_array($class, ['Users', 'Menus', 'Api_keys', 'Api_limit', '__efmigrationshistory'])){
-      $filename = $this->filename . $class.".php";
-      $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
-      fwrite($file, $txt);
-      fclose($file);
-    }
+    $filename = $this->filename . $class.".php";
+    $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
+    fwrite($file, $txt);
+    fclose($file);
   }
 
   private function getFieldFKUsuario($fields){

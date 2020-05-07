@@ -362,13 +362,11 @@ class GenerateClassController{
   }
 
   private function saveFile($class, $txt){
-    if (!in_array($class, ['Dashboard', 'Perfis', 'User', 'Users', 'Welcome'])){
-      $filename = $this->filename . $class . ".php";
+    $filename = $this->filename . $class . ".php";
 
-      $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
-      fwrite($file, $txt);
-      fclose($file);
-    }
+    $file = fopen($filename, 'w+'); //Abre para leitura e escrita; coloca o ponteiro do arquivo no começo do arquivo e reduz o comprimento do arquivo para zero. Se o arquivo não existir, tenta criá-lo. 
+    fwrite($file, $txt);
+    fclose($file);
   }
 
   private function getComeFromChild($table){

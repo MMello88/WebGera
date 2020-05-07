@@ -58,7 +58,7 @@ $autoload['packages'] = array();
 |
 |	$autoload['libraries'] = array('user_agent' => 'ua');
 */
-$autoload['libraries'] = array("database", "form_validation", "generateclassapi", "generateclassview", "generateclassjavascript", "generateclasscontroller", "generatetabelas");
+$autoload['libraries'] = array("database", "session", "form_validation", "generateclassapi", "generateclassview", "generateclassjavascript", "generateclasscontroller", "generatetabelas");
 
 /*
 | -------------------------------------------------------------------

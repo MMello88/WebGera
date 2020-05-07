@@ -167,7 +167,7 @@ class Gera_model extends CI_Model {
                    TABLE_COMMENT
               FROM information_schema.TABLES
               WHERE table_schema = '{$this->db->database}'
-                AND TABLE_NAME NOT IN ('api_keys', 'api_limit', 'colunas', 'foreignkeys', 'menus', 'perfils', 'perfilsmenu', 'perfilsuser', 'submenus', 'tabelas', 'users', '__efmigrationshistory') ";
+                AND TABLE_NAME NOT IN ('api_keys', 'api_limit', 'menus', 'perfis', 'perfismenu', 'perfisuser', 'submenus', 'users', '__efmigrationshistory') ";
     $sql .= !empty($table) ? " AND table_name = '$table'" : "";
     return $this->db->query($sql)->result();
   }
@@ -229,5 +229,9 @@ class Gera_model extends CI_Model {
               AND u.constraint_name <> 'PRIMARY'
             ";
     return $this->db->query($sql)->result();
+  }
+
+  public function exec($script){
+    $this->db->query($script);
   }
 }

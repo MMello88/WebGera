@@ -12,7 +12,7 @@ class GenerateClassView{
   public function saveToProject($folder){
     if (!file_exists("C:\\xampp\\htdocs\\{$folder}\\"))
       die("Caminho do Projeto não encontrado");
-    $this->filename = "C:\\xampp\\htdocs\\{$folder}\\views\\api\\";
+    $this->filename = "C:\\xampp\\htdocs\\{$folder}\\application\\views\\api\\";
   }
 
   public function init($folder, $nameTable = ""){
